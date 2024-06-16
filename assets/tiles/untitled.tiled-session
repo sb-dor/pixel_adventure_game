@@ -7,6 +7,14 @@
     "expandedProjectPaths": [
     ],
     "fileStates": {
+        "Level-01.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 336.6666666666667,
+                "y": 176.66666666666666
+            }
+        }
     },
     "last.imagePath": "/Users/avaz/StudioProjects/pixel_adventure_game/assets/images/Terrain",
     "map.height": 23,
