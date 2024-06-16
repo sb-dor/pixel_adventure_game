@@ -3,15 +3,15 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:pixel_adventure_game/pixel_adventure.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // removes all screen's corners thing like battery and other things
   // sets screen to full screen
-  Flame.device.fullScreen();
+  await Flame.device.fullScreen();
 
   // sets screen to land scape
-  Flame.device.setLandscape();
+  await Flame.device.setLandscape();
 
   runApp(
     GameWidget(
