@@ -1,9 +1,13 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:pixel_adventure_game/characters/player/player_movements.dart';
-import 'package:pixel_adventure_game/characters/player/player_state.dart';
+import 'package:pixel_adventure_game/components/collision/collision_bloc.dart';
 import 'dart:async';
 import 'package:pixel_adventure_game/pixel_adventure.dart';
+
+import 'player_movements.dart';
+import 'player_state.dart';
 
 // you can extend "SpriteAnimation"
 // but "SpriteAnimationGroupComponent" has feature to add a lot of animations
@@ -12,12 +16,18 @@ import 'package:pixel_adventure_game/pixel_adventure.dart';
 // because we loaded and set images in cache and we don't wanna do that again
 
 // keyboard features: you can add keyboard feature by adding mixin "KeyboardHandler"
+
+// collision features: you can add collision (touching features) by adding mixin "CollisionCallbacks"
 class Player extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, KeyboardHandler {
+    with HasGameRef<PixelAdventure>, KeyboardHandler, CollisionCallbacks {
   // just a path for loading image
   final String characterPath;
 
-  Player({required this.characterPath, Vector2? position}) : super(position: position);
+  Player({required this.characterPath, super.position}) {
+    // if you put debugMode to true it will show where the player is
+    // otherwise there are hidden
+    debugMode = true;
+  }
 
   //
   late final SpriteAnimation idleAnimation;
@@ -31,13 +41,20 @@ class Player extends SpriteAnimationGroupComponent
   final int countOfSpriteInImage = 11;
 
   PlayerMovements playerMovements = PlayerMovements.none;
+  PlayerCollisionSide? collisionSide;
   double moveSpeed = 100;
+  double gravity = 9.8;
   Vector2 velocity = Vector2.zero();
   bool isFacingRight = true;
+  List<CollisionBloc> wallCollisions = [];
+  List<CollisionBloc> groundCollisions = [];
 
   // onLoad runs only once like initState
   @override
   FutureOr<void> onLoad() async {
+    // Add a hitbox for collision detection
+    add(RectangleHitbox());
+    //
     _loadAllAnimations();
     return super.onLoad();
   }
@@ -49,6 +66,7 @@ class Player extends SpriteAnimationGroupComponent
   @override
   void update(double dt) {
     _updatePlayerMovement(dt);
+    _applyGravity(dt);
     super.update(dt);
   }
 
@@ -70,6 +88,23 @@ class Player extends SpriteAnimationGroupComponent
     return super.onKeyEvent(event, keysPressed);
   }
 
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    // debugPrint("current other thing ${other.runtimeType}");
+    super.onCollision(intersectionPoints, other);
+    if (other is CollisionBloc) {
+      if (!other.isGround) {
+        if (toRect().overlaps(other.toRect())) {
+          collisionSide = _collisionSideByPlayerMovements();
+          current = PlayerState.idle;
+        }
+      } else {
+        debugPrint("bottom collision");
+        collisionSide = PlayerCollisionSide.bottom;
+      }
+    }
+  }
+
   // load the spite image here
   void _loadAllAnimations() {
     idleAnimation = _loadImageFromPath("Idle", countOfSpriteInImage);
@@ -83,6 +118,10 @@ class Player extends SpriteAnimationGroupComponent
     };
 
     // set current animation state
+    // doesn't matter what you will set here
+    // only matters that you have to change that
+    // that you could handle that
+    // you can use classes either
     current = PlayerState.idle;
   }
 
@@ -102,6 +141,8 @@ class Player extends SpriteAnimationGroupComponent
     double dirx = 0.0;
     switch (playerMovements) {
       case PlayerMovements.left:
+        if (collisionSide == PlayerCollisionSide.left) return;
+        collisionSide = PlayerCollisionSide.none;
         // if don't check is he turned to left or not he will be turning right and left forever
         if (isFacingRight) {
           // turns the sprite's face to left or right
@@ -111,6 +152,8 @@ class Player extends SpriteAnimationGroupComponent
         current = PlayerState.running;
         dirx -= moveSpeed;
       case PlayerMovements.right:
+        if (collisionSide == PlayerCollisionSide.right) return;
+        collisionSide = PlayerCollisionSide.none;
         // if don't check is he turned to left or not he will be turning right and left forever
         if (!isFacingRight) {
           // turns the sprite's face to left or right
@@ -121,9 +164,31 @@ class Player extends SpriteAnimationGroupComponent
         dirx += moveSpeed;
       case PlayerMovements.none:
         current = PlayerState.idle;
-      // TODO: Handle this case.
+      case PlayerMovements.jump:
+        // other code here
+        collisionSide = PlayerCollisionSide.none;
     }
     velocity = Vector2(dirx, 0.0);
     position += velocity * dt;
+  }
+
+  PlayerCollisionSide _collisionSideByPlayerMovements() {
+    switch (playerMovements) {
+      case PlayerMovements.left:
+        return PlayerCollisionSide.left;
+      case PlayerMovements.right:
+        return PlayerCollisionSide.right;
+      case PlayerMovements.none:
+        return PlayerCollisionSide.none;
+      case PlayerMovements.jump:
+        return PlayerCollisionSide.none;
+    }
+  }
+
+  void _applyGravity(double dt) {
+    if (collisionSide == PlayerCollisionSide.bottom) return;
+    velocity.y += gravity;
+    // current player position
+    position.y += velocity.y * dt;
   }
 }

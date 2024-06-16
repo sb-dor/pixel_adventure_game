@@ -5,15 +5,19 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:pixel_adventure_game/characters/player/player.dart';
-import 'package:pixel_adventure_game/characters/player/player_movements.dart';
-import 'package:pixel_adventure_game/levels/level.dart';
+import 'package:pixel_adventure_game/components/characters/player/player.dart';
+import 'package:pixel_adventure_game/components/characters/player/player_movements.dart';
+import 'package:pixel_adventure_game/components/levels/level.dart';
 import 'dart:async'; // for FutureOr
 
 // in order to say to the game that some of our component will have keyboard feature
 // add "HasKeyboardHandlerComponents" mixin to the main "FlameGame" widget;
-// add "DragCallbacks" in order to use Joystick features
-class PixelAdventure extends FlameGame with HasKeyboardHandlerComponents, DragCallbacks {
+// add "DragCallbacks" in order to use Joystick features;
+// add "HasCollisionDetection" in order to use collision features (like touching to other sprites)
+
+// also remember that you can add these all features in specific world component not to entire game
+class PixelAdventure extends FlameGame
+    with HasKeyboardHandlerComponents, DragCallbacks, HasCollisionDetection {
   @override
   Color backgroundColor() => const Color(0xFF211F30);
 
@@ -30,9 +34,10 @@ class PixelAdventure extends FlameGame with HasKeyboardHandlerComponents, DragCa
   // onLoad runs only once like initState
   @override
   FutureOr<void> onLoad() async {
-    // load all images into cache
+    // show joystick only when platform is android or ios (for mobile devices)
     showJoystick = Platform.isAndroid || Platform.isIOS;
 
+    // load all images into cache
     await images.loadAllImages();
 
     //
@@ -42,7 +47,7 @@ class PixelAdventure extends FlameGame with HasKeyboardHandlerComponents, DragCa
     );
 
     level = Level(
-      levelName: "Level-02",
+      levelName: "Level-01",
       player: player,
     );
 
